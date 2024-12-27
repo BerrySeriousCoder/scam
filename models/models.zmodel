@@ -1,0 +1,142 @@
+enum UserStatus {
+    INVITED
+    VERIFIED
+}
+
+model User {
+    id                           String            @id @default(uuid())
+    name                         String?
+    email                        String?           @unique
+    pictureUrl                   String?           @default('https://i.imgur.com/ZdJSK3Y.jpeg')
+    tokenInvitation              String?
+
+    status                       UserStatus        @default(VERIFIED)
+
+    // this is the role of the user for the application
+    globalRole                   String            @default('USER')
+    password                     String?           @password @omit
+    createdAt                    DateTime          @default(now())
+    updatedAt                    DateTime          @updatedAt @default(now())
+
+    documents                    Document[]        @relation("user")
+    jobMatchs                    JobMatch[]        @relation("user")
+    linkedinProfiles             LinkedinProfile[] @relation("user")
+    collaborations               Collaboration[]   @relation("user")
+    collaborationsAsCollaborator Collaboration[]   @relation("collaborator")
+    careerPaths                  CareerPath[]      @relation("user")
+
+    @@auth()
+    @@allow("all", auth().id == this.id)
+    @@allow('all', auth().globalRole == 'ADMIN')
+
+    //we only allow that user to register if they don't create an admin role
+    @@allow("create", globalRole != 'ADMIN')
+    @@allow("read", true)
+}
+
+model Document {
+
+    id             String          @id @default(uuid())
+    title          String?
+    content        String?
+    type           String?
+    format         String?
+    language       String?
+    industryType   String?
+    version        Float
+    score          String?
+
+    userId         String?
+    user           User?           @relation(fields: [userId], references: [id], name: "user")
+
+    templates      Template[]      @relation("document")
+    jobMatchs      JobMatch[]      @relation("document")
+    collaborations Collaboration[] @relation("document")
+    createdAt      DateTime        @default(now())
+    updatedAt      DateTime        @updatedAt @default(now())
+    @@allow("all", true)
+}
+
+model Template {
+
+    id         String    @id @default(uuid())
+    name       String?
+    type       String?
+    content    String?
+    isAts      Boolean
+
+    documentId String?
+    document   Document? @relation(fields: [documentId], references: [id], name: "document")
+
+    createdAt  DateTime  @default(now())
+    updatedAt  DateTime  @updatedAt @default(now())
+    @@allow("all", true)
+}
+
+model JobMatch {
+
+    id             String    @id @default(uuid())
+    jobTitle       String?
+    jobDescription String?
+    matchScore     String?
+    status         String?
+
+    userId         String?
+    user           User?     @relation(fields: [userId], references: [id], name: "user")
+    documentId     String?
+    document       Document? @relation(fields: [documentId], references: [id], name: "document")
+
+    createdAt      DateTime  @default(now())
+    updatedAt      DateTime  @updatedAt @default(now())
+    @@allow("all", true)
+}
+
+model LinkedinProfile {
+
+    id           String   @id @default(uuid())
+    profileUrl   String?
+    content      String?
+    score        String?
+    lastAnalysis String?
+
+    userId       String?
+    user         User?    @relation(fields: [userId], references: [id], name: "user")
+
+    createdAt    DateTime @default(now())
+    updatedAt    DateTime @updatedAt @default(now())
+    @@allow("all", true)
+}
+
+model Collaboration {
+
+    id             String    @id @default(uuid())
+    permission     String?
+
+    documentId     String?
+    document       Document? @relation(fields: [documentId], references: [id], name: "document")
+    userId         String?
+    user           User?     @relation(fields: [userId], references: [id], name: "user")
+    collaboratorId String?
+    collaborator   User?     @relation(fields: [collaboratorId], references: [id], name: "collaborator")
+
+    createdAt      DateTime  @default(now())
+    updatedAt      DateTime  @updatedAt @default(now())
+    @@allow("all", true)
+}
+
+model CareerPath {
+
+    id             String   @id @default(uuid())
+    currentRole    String?
+    targetRole     String?
+    requiredSkills String?
+    progress       String?
+
+    userId         String?
+    user           User?    @relation(fields: [userId], references: [id], name: "user")
+
+    createdAt      DateTime @default(now())
+    updatedAt      DateTime @updatedAt @default(now())
+    @@allow("all", true)
+}
+
